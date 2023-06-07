@@ -10,8 +10,8 @@ class CastOutputToFloat(torch.nn.Sequential):
         return super().forward(x)
 
 
-checkpoint = 'output/checkpoint-220'
-base_model_path = '/workspace/llama-7b'
+checkpoint = '/workspace/output/checkpoint-10'
+base_model_path = '/workspace/models/llama-7b'
 
 
 def load_model(checkpoint, base_model_path):
@@ -27,7 +27,8 @@ def load_model(checkpoint, base_model_path):
     state_dict = torch.load(os.path.join(checkpoint, 'pytorch_model.bin'))
     model.load_state_dict(state_dict)
     model.eval()
-    model.half()
+    model = model.to('cuda:0')
+    # model.half()
     return model, tokenizer
 
 model, tokenizer = load_model(checkpoint, base_model_path)
@@ -42,22 +43,23 @@ model, tokenizer = load_model(checkpoint, base_model_path)
 generation_config = GenerationConfig(
     max_length=1024,
     num_beams=4,
-    do_sample=True,
+    do_sample=False,
     early_stopping=True,
     temperature=0.5,
 )
 model.generation_config = generation_config
 # You could then use the named generation config file to parameterize generation
-# inputs = tokenizer("translate English to French: Configuration files are easy to use!", return_tensors="pt")
+prompt = "User: Ich möchte einen Termin vereinbaren\n Assistant:"
+inputs = tokenizer(prompt, return_tensors="pt")
+inputs = inputs.to('cuda:0')
+outputs = model.generate(**inputs, generation_config=generation_config, pad_token_id=tokenizer.eos_token_id)
+print(tokenizer.batch_decode(outputs, skip_special_tokens=True))
 
-# outputs = model.generate(**inputs, generation_config=generation_config)
-# print(tokenizer.batch_decode(outputs, skip_special_tokens=True))
-
-chatbot = pipeline(model=model, tokenizer=tokenizer)
-conversation = Conversation("")
-x = ""
-while x.lower() != 'end':
-    x = input('User: ')
-    conversation.add_user_input(x)
-    conversation = chatbot(conversation)
-    print('Bot:', conversation.generated_responses[-1])
+# chatbot = pipeline(model=model, tokenizer=tokenizer)
+# conversation = Conversation("")
+# x = ""
+# while x.lower() != 'end':
+#     x = input('User: ')
+#     conversation.add_user_input(x)
+#     conversation = chatbot(conversation)
+#     print('Bot:', conversation.generated_responses[-1])
