@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Sequence
 
 import datasets
-import nltk  # Here to have a nice missing dependency error message early on
+import nltk
 import pandas as pd
 import torch
 import torch.distributed
